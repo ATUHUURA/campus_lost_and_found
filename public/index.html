@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Lost and Found</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #E9ECF5;
+    --ink: #181B3A;
+    --ink-soft: #272B58;
+    --paper: #FCFCFF;
+    --muted: #5B6088;
+    --line: #D3D7EA;
+    --marigold: #FFC93C;
+    --lost: #C9363B;
+    --unclaimed: #2F5BEA;
+    --ok: #138A5B;
+    --wait: #A15C00;
+    --rejected: #A3264F;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    --stub: 128px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .app { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .side { background: var(--ink); color: #DDE0F5; padding: 24px 16px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 28px; }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+  .brand svg { width: 34px; height: 34px; color: var(--marigold); stroke-width: 1.6; }
+  .brand strong { display: block; font-family: var(--display); font-weight: 800; font-size: 1.1rem; line-height: 1.15; color: #fff; }
+  .brand span { font-size: .82rem; color: #9CA2D4; }
+  nav { display: flex; flex-direction: column; gap: 4px; }
+  nav .divider { height: 1px; background: #343869; margin: 10px 8px; }
+  nav button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: 0; padding: 11px 12px; border-radius: 10px; color: #C7CBEE; cursor: pointer; font-weight: 500; transition: background .15s, color .15s; }
+  nav button:hover { background: var(--ink-soft); color: #fff; }
+  nav button.active { background: var(--marigold); color: var(--ink); font-weight: 600; }
+  nav button:focus-visible, .primary:focus-visible, .small:focus-visible, .stat:focus-visible { outline: 3px solid var(--unclaimed); outline-offset: 2px; }
+
+  /* Main */
+  main { padding: 36px clamp(16px, 4vw, 48px) 80px; max-width: 1040px; width: 100%; }
+  .top h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.02em; }
+  .top p { margin: 6px 0 0; color: var(--muted); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--paper); border-radius: 16px; margin: 24px 0 28px; box-shadow: 0 1px 0 rgba(24,27,58,.06), 0 8px 24px -14px rgba(24,27,58,.3); }
+  .stat { background: none; border: 0; text-align: left; padding: 16px 18px; cursor: pointer; border-left: 1px solid var(--line); border-radius: 0; }
+  .stat:first-child { border-left: 0; border-radius: 16px 0 0 16px; }
+  .stat:last-child { border-radius: 0 16px 16px 0; }
+  .stat:hover { background: #F3F4FC; }
+  .stat b { display: block; font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1; }
+  .stat span { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .9rem; color: var(--muted); }
+  .stat i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  section { display: none; }
+  section.active { display: block; }
+
+  .tools { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  input, select, textarea { width: 100%; padding: 11px 13px; background: #fff; border: 1.5px solid #C5CAE3; border-radius: 10px; }
+  input:focus, select:focus, textarea:focus { outline: 3px solid rgba(47,91,234,.3); border-color: var(--unclaimed); }
+  .tools input { flex: 1; min-width: 200px; }
+  .tools select { width: auto; min-width: 190px; }
+  textarea { min-height: 84px; resize: vertical; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+  /* Claim tickets */
+  .ticket { display: grid; grid-template-columns: 1fr var(--stub); background: var(--paper); border-radius: 16px; position: relative; box-shadow: 0 1px 0 rgba(24,27,58,.06), 0 8px 24px -14px rgba(24,27,58,.3); min-width: 0; }
+  .ticket::before, .ticket::after { content: ""; position: absolute; right: calc(var(--stub) - 9px); width: 18px; height: 18px; border-radius: 50%; background: var(--bg); }
+  .ticket::before { top: -9px; }
+  .ticket::after { bottom: -9px; }
+  .ticket .body { padding: 18px 18px 18px 20px; min-width: 0; }
+  .head { display: flex; align-items: center; gap: 12px; }
+  .chip { width: 46px; height: 46px; border-radius: 14px; background: #E6E9F8; color: var(--ink); display: grid; place-items: center; flex: none; }
+  .chip svg { width: 26px; height: 26px; }
+  .thumb { width: 68px; height: 68px; border-radius: 14px; object-fit: cover; flex: none; cursor: zoom-in; border: 2px solid var(--paper); box-shadow: 0 0 0 1.5px var(--line); background: #E6E9F8; }
+  .thumb:focus-visible { outline: 3px solid var(--unclaimed); outline-offset: 2px; }
+  .preview { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+  .preview[hidden] { display: none; }
+  .preview img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--line); }
+  input[type=file] { padding: 9px; background: #F3F4FC; cursor: pointer; }
+  input[type=file]::file-selector-button { border: 0; background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 8px; margin-right: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+  #lightbox { position: fixed; inset: 0; background: rgba(24,27,58,.88); display: grid; place-items: center; padding: 20px; z-index: 20; cursor: zoom-out; }
+  #lightbox[hidden] { display: none; }
+  #lightbox img { max-width: min(92vw, 900px); max-height: 88vh; border-radius: 14px; background: #fff; }
+  .ticket h3 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.35rem; line-height: 1.15; letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .ticket .desc { margin: 10px 0 10px; color: var(--muted); font-size: .95rem; }
+  .ticket dl { margin: 10px 0 0; display: grid; gap: 4px; }
+  .ticket dl div { display: grid; grid-template-columns: 88px 1fr; gap: 8px; font-size: .92rem; }
+  .ticket dt { color: var(--muted); }
+  .ticket dd { margin: 0; overflow-wrap: anywhere; }
+  .stub { border-left: 2px dashed var(--line); padding: 18px 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 14px; text-align: center; }
+  .ref { font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--muted); letter-spacing: .02em; }
+  .stamp { display: inline-block; transform: rotate(-7deg); border: 2.5px solid currentColor; border-radius: 6px; padding: 3px 9px; font-family: var(--display); font-weight: 800; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; opacity: .92; }
+  .stamp.lost { color: var(--lost); }
+  .stamp.unclaimed { color: var(--unclaimed); }
+  .stamp.claimed, .stamp.approved { color: var(--ok); }
+  .stamp.pending { color: var(--wait); }
+  .stamp.rejected { color: var(--rejected); }
+
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .small { border: 0; padding: 9px 16px; border-radius: 9px; font-weight: 600; cursor: pointer; transition: transform .12s; }
+  .small:active { transform: scale(.96); }
+  .small.ok { background: var(--ok); color: #fff; }
+  .small.no { background: #fff; color: var(--rejected); border: 1.5px solid var(--rejected); }
+
+  /* Forms */
+  .panel { background: var(--paper); border-radius: 16px; padding: 22px; margin-top: 26px; box-shadow: 0 1px 0 rgba(24,27,58,.06), 0 8px 24px -14px rgba(24,27,58,.3); max-width: 620px; }
+  .panel h2 { margin: 0 0 14px; font-family: var(--display); font-weight: 800; font-size: 1.4rem; }
+  .panel.solo { margin-top: 0; }
+  form { display: grid; gap: 14px; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: .92rem; }
+  .primary { background: var(--marigold); color: var(--ink); border: 0; padding: 13px 18px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; justify-self: start; transition: transform .12s, background .15s; }
+  .primary:hover { background: #FFD661; }
+  .primary:active { transform: scale(.97); }
+
+  .person { display: flex; align-items: center; gap: 14px; background: var(--paper); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 0 rgba(24,27,58,.06); }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: var(--marigold); display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 1.1rem; flex: none; }
+  .person strong { display: block; }
+  .person span { color: var(--muted); font-size: .9rem; }
+
+  .empty { grid-column: 1 / -1; padding: 36px 16px; text-align: center; color: var(--muted); background: rgba(252,252,255,.6); border: 2px dashed var(--line); border-radius: 16px; }
+
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90%; font-weight: 500; }
+  #toast.show { opacity: 1; }
+  #toast.error { background: var(--lost); }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; flex-direction: row; align-items: center; gap: 12px; padding: 12px; overflow-x: auto; }
+    .brand span { display: none; }
+    .brand strong { font-size: .95rem; white-space: nowrap; }
+    nav { flex-direction: row; gap: 4px; }
+    nav .divider { width: 1px; height: 26px; margin: 0 6px; align-self: center; }
+    nav button { white-space: nowrap; width: auto; padding: 9px 12px; }
+    main { padding-top: 24px; }
+    .grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(3) { border-left: 0; border-radius: 0 0 0 16px; }
+    .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .stat:nth-child(2) { border-radius: 0 16px 0 0; }
+    .stat:last-child { border-radius: 0 0 16px 0; }
+  }
+  @media (max-width: 440px) {
+    :root { --stub: 104px; }
+    .ticket dl div { grid-template-columns: 90px 1fr; }
+    .stamp { font-size: .72rem; letter-spacing: .04em; padding: 3px 7px; }
+    .stub { padding: 16px 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 24 24"><path d="M3 12.5 12.5 3H21v8.5L11.5 21z"/><circle cx="16.5" cy="7.5" r="1.4"/></svg>
+      <div><strong>Campus Lost &amp; Found</strong><span>Lost property office</span></div>
+    </div>
+    <nav id="tabs">
+      <button data-tab="lost" class="active"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Lost items</button>
+      <button data-tab="found"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Found items</button>
+      <button data-tab="claims"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg>Claims</button>
+      <div class="divider"></div>
+      <button data-tab="report"><svg viewBox="0 0 24 24"><path d="M6 21V4M6 5h11l-2 4 2 4H6"/></svg>Report lost</button>
+      <button data-tab="post"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>Post found</button>
+      <div class="divider"></div>
+      <button data-tab="users"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/></svg>Users</button>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="top">
+      <h1 id="pageTitle">Lost items</h1>
+      <p id="pageHint">Things people are looking for.</p>
+    </header>
+
+    <div class="stats" id="stats"></div>
+
+    <section id="lost" class="active">
+      <div class="tools"><input id="searchLost" placeholder="Search by item, place or description"></div>
+      <div class="grid" id="lostList"></div>
+    </section>
+
+    <section id="found">
+      <div class="tools"><input id="searchFound" placeholder="Search by item, place or description"></div>
+      <div class="grid" id="foundList"></div>
+    </section>
+
+    <section id="claims">
+      <div class="tools">
+        <select id="claimFilter">
+          <option value="">All claims</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="grid" id="claimList"></div>
+      <div class="panel">
+        <h2>Make a claim</h2>
+        <form id="claimForm">
+          <label>Your name <input name="claimantName" required placeholder="Type your name"></label>
+          <label>Found item you are claiming <select name="foundItemId" id="claimItem" required></select></label>
+          <label>Proof it is yours <textarea name="proofOfOwnership" placeholder="A serial number, a mark, what is on the screen"></textarea></label>
+          <button class="primary">Submit claim</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="report">
+      <div class="panel solo">
+        <form id="lostForm">
+          <label>Your name <input name="reportedBy" required placeholder="Type your name"></label>
+          <label>Item name <input name="itemName" required placeholder="Black backpack"></label>
+          <label>Description <textarea name="description" placeholder="Colour, brand, anything that makes it yours"></textarea></label>
+          <label>Date lost <input type="date" name="dateLost"></label>
+          <label>Where did you lose it? <input name="locationLost" placeholder="Main library"></label>
+          <div>
+            <label>Photo (optional) <input type="file" id="lostPhoto" accept="image/*"></label>
+            <div class="preview" id="lostPreview" hidden><img alt="Photo preview"><button type="button" class="small no">Remove photo</button></div>
+          </div>
+          <button class="primary">Report lost item</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="post">
+      <div class="panel solo">
+        <form id="foundForm">
+          <label>Your name (the finder) <input name="foundBy" required placeholder="Type your name"></label>
+          <label>Item name <input name="itemName" required placeholder="Blue water bottle"></label>
+          <label>Description <textarea name="description" placeholder="Colour, brand, condition"></textarea></label>
+          <label>Date found <input type="date" name="dateFound"></label>
+          <label>Where was it found? <input name="locationFound" placeholder="Student centre"></label>
+          <div>
+            <label>Photo (optional) <input type="file" id="foundPhoto" accept="image/*"></label>
+            <div class="preview" id="foundPreview" hidden><img alt="Photo preview"><button type="button" class="small no">Remove photo</button></div>
+          </div>
+          <button class="primary">Post found item</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="users">
+      <div class="grid" id="userList"></div>
+      <div class="panel">
+        <h2>Add a user</h2>
+        <form id="userForm">
+          <label>Name <input name="name" required></label>
+          <label>Email <input type="email" name="email"></label>
+          <label>Role
+            <select name="role"><option>student</option><option>staff</option><option>security</option></select>
+          </label>
+          <button class="primary">Add user</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="lightbox" hidden><img alt="Item photo"></div>
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { users: [], lost: [], found: [], claims: [] };
+
+const PAGES = {
+  lost:   ["Lost items", "Things people are looking for."],
+  found:  ["Found items", "Things waiting for their owners."],
+  claims: ["Claims", "Review requests from people who say an item is theirs."],
+  report: ["Report a lost item", "Tell us what you lost and where."],
+  post:   ["Post a found item", "Describe what you found so the owner can claim it."],
+  users:  ["Users", "People registered in the system."],
+};
+
+// Always escape text from the database before putting it on the page.
+function esc(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function toast(msg, isError) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (isError ? " error" : "");
+  setTimeout(() => (t.className = ""), 2600);
+}
+
+async function api(url, method = "GET", body) {
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+async function loadAll() {
+  [state.users, state.lost, state.found, state.claims] = await Promise.all([
+    api("/api/users"), api("/api/lost"), api("/api/found"), api("/api/claims"),
+  ]);
+  render();
+}
+
+function show(tab) {
+  document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("active", x.dataset.tab === tab));
+  document.querySelectorAll("section").forEach((s) => s.classList.toggle("active", s.id === tab));
+  $("pageTitle").textContent = PAGES[tab][0];
+  $("pageHint").textContent = PAGES[tab][1];
+  window.scrollTo({ top: 0 });
+}
+
+// Little pictures for common items. The first one whose keywords match the item name wins.
+const ICONS = [
+  ["phone", /\b(phones?|iphones?|smartphones?|mobiles?|tecno|infinix|itel|samsung|android)\b/,
+    '<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>'],
+  ["laptop", /\b(laptops?|computers?|macbooks?|chromebooks?|hp|dell|lenovo)\b/,
+    '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>'],
+  ["bottle", /\b(bottles?|flasks?|tumblers?|jerrycans?)\b/,
+    '<path d="M10 2.5h4M10.5 2.5v3L8.5 8.5v11a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-11l-2-3v-3"/><path d="M8.5 12.5h7"/>'],
+  ["pen", /\b(pens?|pencils?|markers?|highlighters?)\b/,
+    '<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/>'],
+  ["book", /\b(books?|notebooks?|textbooks?|diary|journal|exercise|files?)\b/,
+    '<path d="M5 4.5h11a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h11M9 8h6"/>'],
+  ["bag", /\b(bags?|backpacks?|handbags?|satchel|rucksack)\b/,
+    '<path d="M8 7V6a4 4 0 0 1 8 0v1"/><rect x="4.5" y="7" width="15" height="14" rx="3"/><path d="M9 13h6"/>'],
+  ["keys", /\b(keys?|keychain|keyring)\b/,
+    '<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2"/>'],
+  ["wallet", /\b(wallets?|purse)\b/,
+    '<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r=".7"/>'],
+  ["umbrella", /\b(umbrellas?)\b/,
+    '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v7a2 2 0 0 1-4 0"/>'],
+  ["headphones", /\b(headphones?|earphones?|earbuds?|airpods?|headsets?)\b/,
+    '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>'],
+  ["charger", /\b(chargers?|cables?|powerbanks?|power bank|adapters?|adaptors?)\b/,
+    '<path d="M9 2v5M15 2v5"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v5"/>'],
+  ["glasses", /\b(glasses|spectacles|sunglasses|eyeglasses)\b/,
+    '<circle cx="6.5" cy="14" r="3.5"/><circle cx="17.5" cy="14" r="3.5"/><path d="M10 14h4M3 14l1-5M21 14l-1-5"/>'],
+  ["watch", /\b(watch|watches)\b/,
+    '<rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6l1-4h4l1 4M9 18l1 4h4l1-4M12 10v2.5l1.5 1"/>'],
+  ["card", /\b(id|cards?|passport|licen[sc]e)\b/,
+    '<rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M6 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 10h4M14 13h3"/>'],
+  ["calculator", /\b(calculators?)\b/,
+    '<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>'],
+];
+const TAG_ICON = '<path d="M3 12.5L12.5 3H21v8.5L11.5 21z"/><circle cx="16.5" cy="7.5" r="1.4"/>';
+
+function iconFor(text) {
+  const t = String(text || "").toLowerCase();
+  const hit = ICONS.find(([, re]) => re.test(t));
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${hit ? hit[2] : TAG_ICON}</svg>`;
+}
+
+// One claim ticket: details on the left, reference number and status stamp on the tear-off stub.
+function ticket({ id, title, desc, rows, stamp, extra, photo }) {
+  const ref = String(id || "").slice(-4).toUpperCase();
+  // Match on the item name first; only fall back to the description if the name has no match.
+  const named = iconFor(title);
+  const icon = named.includes(TAG_ICON) && desc ? iconFor(desc) : named;
+  return `
+    <article class="ticket">
+      <div class="body">
+        <div class="head">${photo
+          ? `<img class="thumb" src="${esc(photo)}" alt="Photo of ${esc(title)}" tabindex="0" role="button">`
+          : `<span class="chip">${icon}</span>`}<h3>${esc(title)}</h3></div>
+        ${desc ? `<p class="desc">${esc(desc)}</p>` : ""}
+        <dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+        ${extra || ""}
+      </div>
+      <div class="stub">
+        <span class="ref">No. ${esc(ref)}</span>
+        <span class="stamp ${esc(stamp)}">${esc(stamp)}</span>
+      </div>
+    </article>`;
+}
+
+function render() {
+  // Stats strip
+  const lostCount = state.lost.filter((i) => i.status === "lost").length;
+  const waiting = state.found.filter((i) => i.status === "unclaimed").length;
+  const pending = state.claims.filter((c) => c.status === "pending").length;
+  const returned = state.found.filter((i) => i.status === "claimed").length;
+  const stat = (tab, n, label, color) =>
+    `<button class="stat" data-go="${tab}"><b>${n}</b><span><i style="background:${color}"></i>${label}</span></button>`;
+  $("stats").innerHTML =
+    stat("lost", lostCount, "Still lost", "var(--lost)") +
+    stat("found", waiting, "Waiting for owner", "var(--unclaimed)") +
+    stat("claims", pending, "Claims to review", "var(--wait)") +
+    stat("found", returned, "Returned", "var(--ok)");
+
+  // Lost items
+  const ql = $("searchLost").value.toLowerCase();
+  const lost = state.lost.filter((i) => JSON.stringify({ ...i, photo: 0 }).toLowerCase().includes(ql));
+  $("lostList").innerHTML = lost.length
+    ? lost.map((i) => ticket({
+        id: i._id, title: i.itemName, desc: i.description, stamp: i.status || "lost", photo: i.photo,
+        rows: [["Lost at", i.locationLost || "Unknown"], ["Date", i.dateLost || "Unknown"], ["Reported by", i.reportedBy || "Unknown"]],
+      })).join("")
+    : `<div class="empty">${ql ? "No lost items match your search." : "No lost items yet. Use Report lost to add one."}</div>`;
+
+  // Found items
+  const qf = $("searchFound").value.toLowerCase();
+  const found = state.found.filter((i) => JSON.stringify({ ...i, photo: 0 }).toLowerCase().includes(qf));
+  $("foundList").innerHTML = found.length
+    ? found.map((i) => ticket({
+        id: i._id, title: i.itemName, desc: i.description, stamp: i.status || "unclaimed", photo: i.photo,
+        rows: [["Found at", i.locationFound || "Unknown"], ["Date", i.dateFound || "Unknown"], ["Found by", i.foundBy || "Unknown"]],
+      })).join("")
+    : `<div class="empty">${qf ? "No found items match your search." : "No found items yet. Use Post found to add one."}</div>`;
+
+  // Claims
+  const cf = $("claimFilter").value;
+  const claims = state.claims.filter((c) => !cf || c.status === cf);
+  $("claimList").innerHTML = claims.length
+    ? claims.map((c) => {
+        const user = c.user && c.user[0];
+        const item = c.foundItem && c.foundItem[0];
+        const buttons = c.status === "pending"
+          ? `<div class="actions">
+               <button class="small ok" data-claim="${esc(c._id)}" data-status="approved">Approve</button>
+               <button class="small no" data-claim="${esc(c._id)}" data-status="rejected">Reject</button>
+             </div>`
+          : "";
+        return ticket({
+          id: c._id, title: c.itemClaimed, stamp: c.status, photo: item && item.photo,
+          rows: [
+            ["Claimed by", user ? user.name : c.claimantName || "Unknown"],
+            ["Found item", item ? `${item.itemName} (${item.status})` : "Not linked"],
+            ["Proof", c.proofOfOwnership || "None given"],
+            ["Date", c.dateClaimed || ""],
+          ],
+          extra: buttons,
+        });
+      }).join("")
+    : `<div class="empty">${cf ? "No claims with that status." : "No claims yet. Use the form below to make one."}</div>`;
+
+  // Users
+  $("userList").innerHTML = state.users.length
+    ? state.users.map((u) => `
+        <div class="person">
+          <div class="avatar">${esc((u.name || "?").charAt(0).toUpperCase())}</div>
+          <div><strong>${esc(u.name)}</strong><span>${esc(u.email || "No email")}${u.role ? ", " + esc(u.role) : ""}</span></div>
+        </div>`).join("")
+    : `<div class="empty">No users yet. Add one below.</div>`;
+
+  // Claim form: only unclaimed found items can be claimed
+  const keepItem = $("claimItem").value;
+  $("claimItem").innerHTML = `<option value="">Choose an item</option>` +
+    state.found.filter((i) => i.status === "unclaimed")
+      .map((i) => `<option value="${esc(i._id)}">${esc(i.itemName)}, found at ${esc(i.locationFound || "unknown place")}</option>`).join("");
+  $("claimItem").value = keepItem;
+}
+
+function formData(form) {
+  return Object.fromEntries(new FormData(form).entries());
+}
+
+async function submit(form, url, build, msg, goTo, after) {
+  try {
+    await api(url, "POST", build(formData(form)));
+    form.reset();
+    if (after) after();
+    toast(msg);
+    await loadAll();
+    if (goTo) show(goTo);
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---- Photos: shrink the picture in the browser so it stays small in the database ----
+const photos = { lost: null, found: null };
+
+function shrink(file, max = 900, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) return reject(new Error("Choose an image file (JPG or PNG)."));
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That photo could not be read. Try a JPG or PNG.")); };
+    img.src = url;
+  });
+}
+
+function photoPicker(key) {
+  const input = $(key + "Photo");
+  const box = $(key + "Preview");
+  const img = box.querySelector("img");
+  function clear() {
+    photos[key] = null;
+    img.removeAttribute("src");
+    box.hidden = true;
+    input.value = "";
+  }
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return clear();
+    try {
+      photos[key] = await shrink(file);
+      img.src = photos[key];
+      box.hidden = false;
+    } catch (e) { toast(e.message, true); clear(); }
+  });
+  box.querySelector("button").addEventListener("click", clear);
+  return clear;
+}
+const clearLostPhoto = photoPicker("lost");
+const clearFoundPhoto = photoPicker("found");
+
+// Tap a photo to see it big; tap again or press Esc to close.
+const lightbox = $("lightbox");
+function closeLightbox() { lightbox.hidden = true; }
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("img.thumb");
+  if (t) { lightbox.querySelector("img").src = t.src; lightbox.hidden = false; }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeLightbox();
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("img.thumb")) {
+    e.preventDefault();
+    e.target.click();
+  }
+});
+lightbox.addEventListener("click", closeLightbox);
+
+$("lostForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(e.target, "/api/lost", (d) => (photos.lost ? { ...d, photo: photos.lost } : d), "Lost item reported.", "lost", clearLostPhoto);
+});
+$("foundForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(e.target, "/api/found", (d) => (photos.found ? { ...d, photo: photos.found } : d), "Found item posted.", "found", clearFoundPhoto);
+});
+$("claimForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(e.target, "/api/claims", (d) => ({
+    ...d, dateClaimed: new Date().toISOString().slice(0, 10),
+  }), "Claim submitted.");
+});
+$("userForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(e.target, "/api/users", (d) => d, "User added.");
+});
+
+$("claimList").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-claim]");
+  if (!b) return;
+  try {
+    await api("/api/claims/" + b.dataset.claim, "PATCH", { status: b.dataset.status });
+    toast("Claim " + b.dataset.status + ".");
+    await loadAll();
+  } catch (err) { toast(err.message, true); }
+});
+
+["searchLost", "searchFound", "claimFilter"].forEach((id) => $(id).addEventListener("input", render));
+
+$("tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-tab]");
+  if (b) show(b.dataset.tab);
+});
+
+$("stats").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-go]");
+  if (b) show(b.dataset.go);
+});
+
+loadAll().catch((e) => toast("Could not load data: " + e.message, true));
+</script>
+</body>
+</html>
