@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const { MongoClient, ObjectId } = require("mongodb");
 
-const MONGO_URL = process.env.MONGO_URL || "mongodb://127.0.0.1:27017";
+const MONGO_URL = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
 const DB_NAME = "CampusLostAndFound";
 const PORT = process.env.PORT || 3000;
 
